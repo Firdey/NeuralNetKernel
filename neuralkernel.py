@@ -1,57 +1,70 @@
 import numpy as np
+
+#CLASS NETWORK: Neural network using Kernel Learning via Random Fourier Representations
+#METHODS:
+# FORWARD: Forward propagation, given the parameters predict the response vectors
+# BACKWARD: Backward propagation, given the response vectors update the parameters
+# TRAIN: Given an inital state, iterate forward backward iteration
 class Network:
+
+    #MEMBER VARIABLES: SEE CONSTRUCTOR with the self. prefix
+
+    #CONSTRUCTOR
     def __init__(self, layer_size, loss, activ, xdata, ydata, epsilon, alpha, penalty, max_it, tolerance):
 
-        # layer_size is a 3d with [ input size, hidden layer size and output size ] 
+        # PARAMETERS:
+        #   layer_size: an array with 3 elements [number of features in X, hidden layer size (m), output size (1 for regresion)]
+        #   loss: object with a method which evaluates the loss formula (e.g. quadratic, hinge etc) and its gradient
+        #   activ: activation function is an object with a method which evaluates the activation function and its gradient
+        #   xdata: numpy array of the X observations, dimensions = n x p (matrix)
+        #   ydata: numpy array of the Y observations, dim = n (vector)
+        #   epsilon: step size for gradient descent
+        #   alpha: parameter for momentum
+        #   penalty: array of size 2 for penalty terms [lambda, mu]
+        #   max_it: maximum number of iterations
+        #   tolerance: stopping criterion if the difference in loss between steps is less than tolerance
 
-        # loss is an object with a method which evaluates the loss formula (e.g. quadratic, hinge etc)
+        #ASSIGN CONSTRUCTOR PARAMETERS TO MEMBER VARIABLES
+        self.loss = loss #loss object
+        self.activ = activ #activ object
+        self.xdata = xdata #design matrix
+        self.ydata = ydata #response vector
+        self.epsilon = epsilon #step size
+        self.alpha = alpha #momentum parameter
+        self.lam = penalty[0] #penalty term (for beta)
+        self.mu = penalty[1] #penalty term (for the angular frequencies)
+        self.max_it = max_it #maximum number of iterations
+        self.tolerance = tolerance #stopping criterion
 
-        # activation function is an object
+        #EXTRACT THE DIMENSIONS of X, y and check if they are consistent
+        #X is a nxp matrix
+        #Y is a n size vector
+        #layer size is a vector of size 3 containing [p,m,k]
+        self.n = len(ydata)
+        self.p = layer_size[0]
+        #ensure n is consistent, if not throw exception
+        if (self.n != xdata.shape[0]):
+          raise Exception('The height of xdata is not the same as the length of ydata')
+        #ensure p is consistent, if not throw exception
+        if (self.p != xdata.shape[1]):
+          raise Exception('The width of xdata is not the same as layer_size[0]')
 
-        # activation function is an object which has a method evaluating the activation function
+        #ADDITIONAL MEMBER VARIABLES
+        self.m = layer_size[1] #size of hidden layer
+        self.weights = np.ones( ( self.m , self.p ) ) * 0.05 #matrix of angular frequncies (m x p matrix)
+        self.betas = np.ones( 2 * self.m ) * 0.05 #vector of 2m betas (amplitudes)
+        self.loss_vector = np.zeros( max_it ) #the loss at each step of backward propagation
+        self.iterations = 0  #number of iterations done so far
 
-        # xdata is a numpy array of the X observations dim = n x p
-
-        # xdata is a numpy array of the Y observations dim = n 
-
-        # epsilon is the step size in the propagation algo
-
-        # alpha is the momentum coefficient
-
-        # penalty is the lambda and mu 
-
-        # max_it is the maximum number of iterations before we stop the algo
-
-        # tolerance is another stopping criterion for the errors
-
-
-        self.layer_size = layer_size # layer_size is a 3d with [ input size, hidden layer size and output size ] 
-        self.loss = loss 			 # loss is an object with a method which evaluates the loss formula (e.g. quadratic, hinge etc)
-        self.activ = activ 			 # activation function is an object which has a method evaluating the activation function
-        self.xdata = xdata_weight 	 # xdata is a numpy array of the X observations dim = n x p
-        self.ydata = ydata           # xdata is a numpy array of the Y observations dim = n 
-        self.n = len( ydata )		 #	
-        self.p = layer_size[ 0 ]
-        self.m = layer_size[ 1 ]
-        self.weights = np.ones( ( self.m , self.p ) ) * 0.05 # CHANGE
-        self.betas = np.ones( 2 * self.m ) * 0.05 #Randomised function np.rand.randn
-        self.max_it = max_it
-		self.lam = penalty[ 0 ]
-        self.mu = penalty[ 1 ]
-        self.epsilon = epsilon
-        self.alpha = alpha
-        self.tolerance = tolerance
-
-        # some more initialisations  
-        self.iterations = 0  # set number of iter = 0
-        self.loss_vector = np.zeros( max_it ) # the errors for the graph
-        self.grad_w_loss = np.zeros ( ( self.p , self.m )  ) #
-        self.weight_diff = 0
-        self.betas_diff = 0
+        self.weight_diff = 0 #THIS SHOULD BE IN BACKWARD METHOD
+        self.betas_diff = 0 #THIS SHOULD BE IN BACKWARD METHOD
+        self.grad_w_loss = np.zeros ((self.p , self.m )) #THIS SHOULD BE IN BACKWARD METHOD
     
 
-        # forward propagation
-        #compute fitted values etc
+    #METHODS
+
+    #FORWARD PROPAGATION
+        #given the parameters predict the response vectors
     def forward( self ):
         self.xdata_weight = np.dot( self.weights, self.xdata.transpose( ) ) #this is  dim m X p of weighted data
         self.phi_sin = np.array( np.sin( self.xdata_weight ))  / np.sqrt( self.m ) # sin part of phi
