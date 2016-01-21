@@ -1,55 +1,71 @@
 import numpy as np
 class Network:
     def __init__(self, layer_size, loss, activ, xdata, ydata, epsilon, alpha, penalty, max_it, tolerance):
-        # layer_size is a 3 dimensional vector with [input size m (with cos and sin each) output size]
 
-        # loss is an object being pass defining the loss function with also penalty, current choices are
-        #  quadratic loss, hinge loss logistic loss
+        # layer_size is a 3d with [ input size, hidden layer size and output size ] 
 
-        # activ refers to the activation function used in final layer, e.g. soft max
+        # loss is an object with a method which evaluates the loss formula (e.g. quadratic, hinge etc)
 
-        # Xdata is the X observatios dimension n by p
+        # activation function is an object
 
-        # Ydata is the Y observations dimension n
+        # activation function is an object which has a method evaluating the activation function
 
-        self.layer_size = layer_size
-        self.loss = loss
-        self.activ = activ
-        self.xdata = xdata
-        self.ydata = ydata
-        self.n = len( ydata )
+        # xdata is a numpy array of the X observations dim = n x p
+
+        # xdata is a numpy array of the Y observations dim = n 
+
+        # epsilon is the step size in the propagation algo
+
+        # alpha is the momentum coefficient
+
+        # penalty is the lambda and mu 
+
+        # max_it is the maximum number of iterations before we stop the algo
+
+        # tolerance is another stopping criterion for the errors
+
+
+        self.layer_size = layer_size # layer_size is a 3d with [ input size, hidden layer size and output size ] 
+        self.loss = loss 			 # loss is an object with a method which evaluates the loss formula (e.g. quadratic, hinge etc)
+        self.activ = activ 			 # activation function is an object which has a method evaluating the activation function
+        self.xdata = xdata_weight 	 # xdata is a numpy array of the X observations dim = n x p
+        self.ydata = ydata           # xdata is a numpy array of the Y observations dim = n 
+        self.n = len( ydata )		 #	
         self.p = layer_size[ 0 ]
         self.m = layer_size[ 1 ]
-        self.weights = np.ones( ( self.m , self.p ) ) * 0.05
-        self.betas = np.ones( 2 * self.m ) * 0.05
-        #Randomised function np.rand.randn
+        self.weights = np.ones( ( self.m , self.p ) ) * 0.05 # CHANGE
+        self.betas = np.ones( 2 * self.m ) * 0.05 #Randomised function np.rand.randn
         self.max_it = max_it
-        self.iterations = 0
-        self.loss_vector = np.zeros( max_it )
-        self.lam = penalty[0]
-        self.mu = penalty[1]
+		self.lam = penalty[ 0 ]
+        self.mu = penalty[ 1 ]
         self.epsilon = epsilon
         self.alpha = alpha
-        self.grad_w_loss = np.array( [ [ 0 for i in range( 0, self.p ) ] for j in range( 0, self.m ) ] )
+        self.tolerance = tolerance
+
+        # some more initialisations  
+        self.iterations = 0  # set number of iter = 0
+        self.loss_vector = np.zeros( max_it ) # the errors for the graph
+        self.grad_w_loss = np.zeros ( ( self.p , self.m )  ) #
         self.weight_diff = 0
         self.betas_diff = 0
-        self.tolerance = tolerance
+    
 
         # forward propagation
         #compute fitted values etc
     def forward( self ):
-        self.xdata_weight = np.dot( self.weights, self.xdata.transpose( ) )
-        self.hidden_matrix_sin = np.array( np.sin( self.xdata_weight ))  / np.sqrt( self.m )
-        self.hidden_matrix_cos = np.array( np.cos( self.xdata_weight ))   / np.sqrt( self.m )
-        self.hidden_matrix = np.array( [ [ self.hidden_matrix_cos ], [ self.hidden_matrix_sin ] ] )
-        self.weight_matrix = np.dot( self.betas, self.hidden_matrix )
-        self.ydata_hat = self.activ.formula( self.weight_matrix )
+        self.xdata_weight = np.dot( self.weights, self.xdata.transpose( ) ) #this is  dim m X p of weighted data
+        self.phi_sin = np.array( np.sin( self.xdata_weight ))  / np.sqrt( self.m ) # sin part of phi
+        self.phi_cos = np.array( np.cos( self.xdata_weight ))   / np.sqrt( self.m ) # cos part of phi 
+        self.phi_matrix = np.vstack( (  self.phi_cos , self.phi_sin ) ) # stuck cosines on top of sines
+        self.weight_vector = np.dot( self.betas, self.phi_matrix ) # dim n  includes paramters inside the activation function
+        self.ydata_hat = self.activ.formula( self.weight_vector) # the fitted y's that depend on the activation fn
 
 
         #backward propagation
         #updates weights and betas
     def backward ( self ):
         self.loss_vector[ self.iterations ] =  self.loss.formula(self.ydata, self.ydata_hat) * 1.0 / ( self.n ) + self.lam * np.dot( self.betas, self.betas ) + self.mu * np.sum( self.weights * self.weights )
+        #loss vector is the evaluation of our objective function in every iteration
         s_grad = self.activ.diff( self.weight_matrix )
         grad_b_loss = 2 * self.lam * self.betas - np.dot( s_grad * self.hidden_matrix , self.loss.diff(self.ydata, self.ydata_hat) )
         self.betas_diff = (self.epsilon * grad_b_loss + self.alpha * self.betas_diff)
@@ -93,3 +109,4 @@ class Mean_S_E:
     def diff(ydata, ydata_hat):
         y_errors = ydata - ydata_hat
         return 2 * y_errors * 1.0 / ( self.n )
+
