@@ -58,7 +58,8 @@ class Network:
         betas_sin = self.betas[ self.m : 2 * self.m ]
 
         for j in range( 0, self.m ):
-            term_1 = np.dot( self.loss.diff(self.ydata, self.ydata_hat), self.xdata * self.hidden_matrix_cos[ :, j ] * s_grad * betas_sin[ j ] )                    term_2 = np.dot( self.loss.diff(self.ydata, self.ydata_hat), self.xdata * self.hidden_matrix_sin[ :, j ] * s_grad * betas_cos[ j ] )
+            term_1 = np.dot( self.loss.diff(self.ydata, self.ydata_hat), self.xdata * self.hidden_matrix_cos[ :, j ] * s_grad * betas_sin[ j ] )
+            term_2 = np.dot( self.loss.diff(self.ydata, self.ydata_hat), self.xdata * self.hidden_matrix_sin[ :, j ] * s_grad * betas_cos[ j ] )
             self.grad_w_loss[ j ] = 2 * self.lam * self.weights + ( term_1 - term_2 )
             self.weight_diff = (self.epsilon * self.grad_w_loss + self.alpha * self.weight_diff)
             self.weights = self.weights - self.weight_diff  #might need to transpose
