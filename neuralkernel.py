@@ -80,18 +80,23 @@ class Network:
         self.loss_vector[ self.iterations ] =  self.loss.formula(self.ydata, self.ydata_hat) * 1.0 / ( self.n ) + self.lam * np.dot( self.betas, self.betas ) + self.mu * np.sum( self.weights * self.weights )
         #loss vector is the evaluation of our objective function in every iteration
         s_grad = self.activ.diff( self.weight_matrix )
-        grad_b_loss = 2 * self.lam * self.betas - np.dot( s_grad * self.hidden_matrix , self.loss.diff(self.ydata, self.ydata_hat) )
+        #s_grad computes the gradient of the activation function
+        grad_b_loss = 2 * self.lam * self.betas - np.dot( s_grad * self.phi_matrix , self.loss.diff(self.ydata, self.ydata_hat) ) 
+        #gradient of the objective function wrt b
         self.betas_diff = (self.epsilon * grad_b_loss + self.alpha * self.betas_diff)
-        self.betas = self.betas - betas_diff
+        #this is the betas difference including the step*grad and for the momentum term
+        self.betas = self.betas - self.betas_diff
         betas_cos = self.betas[ 0 : self.m ]
         betas_sin = self.betas[ self.m : 2 * self.m ]
 
         for j in range( 0, self.m ):
-            term_1 = np.dot( self.loss.diff(self.ydata, self.ydata_hat), self.xdata * self.hidden_matrix_cos[ :, j ] * s_grad * betas_sin[ j ] )
-            term_2 = np.dot( self.loss.diff(self.ydata, self.ydata_hat), self.xdata * self.hidden_matrix_sin[ :, j ] * s_grad * betas_cos[ j ] )
-            self.grad_w_loss[ j ] = 2 * self.lam * self.weights + ( term_1 - term_2 )
+            help_mat =  - self.loss.diff(self.ydata, self.ydata_hat) * s_grad * ( self.phi_cos[ j, : ] *  betas_sin[ j ] - self.phi_sin[ j, : ] *  betas_cos[ j ])* self.xdat.transpose() 
+            #this gives a p by n matrix where each data point i is scaled by the appropiate coef 
+            term_1 = np.array( [sum(column) for column in help_mat]).transpose()
+            #now we sum the columns of the matrix to obtain a p vector for the gradient wrt w_r
+            self.grad_w_loss[ j ] = 2 * self.lam * self.weights + term_1 
             self.weight_diff = (self.epsilon * self.grad_w_loss + self.alpha * self.weight_diff)
-            self.weights = self.weights - self.weight_diff  #might need to transpose
+            self.weights = self.weights - self.weight_diff  
             self.iterations = self.iterations + 1
 
     def train ( self ):
