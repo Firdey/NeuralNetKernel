@@ -14,7 +14,7 @@ class Network:
 
         # PARAMETERS:
         #   layer_size: an array with 3 elements [number of features in X, hidden layer size (m), output size (1 for regresion)]
-        #   loss: object with a method which evaluates the loss formula (e.g. quadratic, hinge etc) and its gradient
+        #   loss: object with a method which evaluates the loss formula (e.g. MEAN quadratic, hinge etc) and its gradient
         #   activ: activation function is an object with a method which evaluates the activation function and its gradient
         #   xdata: numpy array of the X observations, dimensions = n x p (matrix)
         #   ydata: numpy array of the Y observations, dim = n (vector)
@@ -56,10 +56,16 @@ class Network:
         self.loss_vector = np.zeros( max_it ) #the loss at each step of backward propagation
         self.iterations = 0  #number of iterations done so far
 
-        self.weight_diff = 0 #THIS SHOULD BE IN BACKWARD METHOD
-        self.betas_diff = 0 #THIS SHOULD BE IN BACKWARD METHOD
+        self.weight_diff = 0 #for momentum
+        self.betas_diff = 0 #for momentum
         self.grad_w_loss = np.zeros ((self.p , self.m )) #THIS SHOULD BE IN BACKWARD METHOD
-    
+
+        self.xdata_weight = 0
+        self.phi_sin = 0
+        self.phi_cos = 0
+        self.phi_matrix = 0
+        self.weight_vector = 0
+        self.ydata_hat = 0
 
     #METHODS
 
@@ -74,30 +80,39 @@ class Network:
         self.ydata_hat = self.activ.formula( self.weight_vector) # the fitted y's that depend on the activation fn
 
 
-        #backward propagation
-        #updates weights and betas
+    #BACKWARD PROPAGATION
+        #given the response vectors, update weights and betas
     def backward ( self ):
-        self.loss_vector[ self.iterations ] =  self.loss.formula(self.ydata, self.ydata_hat) * 1.0 / ( self.n ) + self.lam * np.dot( self.betas, self.betas ) + self.mu * np.sum( self.weights * self.weights )
         #loss vector is the evaluation of our objective function in every iteration
-        s_grad = self.activ.diff( self.weight_matrix )
+        self.loss_vector[ self.iterations ] =  self.loss.formula(self.ydata, self.ydata_hat) * 1.0  + self.lam * np.dot( self.betas, self.betas ) + self.mu * np.sum( self.weights * self.weights )
         #s_grad computes the gradient of the activation function
-        grad_b_loss = 2 * self.lam * self.betas - np.dot( s_grad * self.phi_matrix , self.loss.diff(self.ydata, self.ydata_hat) ) 
+        s_grad = self.activ.diff( self.weight_vector )
+
+        #LAYER 1 - UPDATE BETA
+
         #gradient of the objective function wrt b
-        self.betas_diff = (self.epsilon * grad_b_loss + self.alpha * self.betas_diff)
+        grad_b_loss = 2 * self.lam * self.betas - np.dot(self.phi_matrix , s_grad * self.loss.diff(self.ydata, self.ydata_hat) )
         #this is the betas difference including the step*grad and for the momentum term
-        self.betas = self.betas - self.betas_diff
+        self.betas_diff = self.epsilon * grad_b_loss + self.alpha * self.betas_diff
+        #update the beta parameter
+        self.betas -= self.betas_diff
+
+        #LAYER 2 - UPDATE WEIGHTS
+
         betas_cos = self.betas[ 0 : self.m ]
         betas_sin = self.betas[ self.m : 2 * self.m ]
 
+        #for each column in the weight matrix
         for j in range( 0, self.m ):
-            help_mat =  - self.loss.diff(self.ydata, self.ydata_hat) * s_grad * ( self.phi_cos[ j, : ] *  betas_sin[ j ] - self.phi_sin[ j, : ] *  betas_cos[ j ])* self.xdat.transpose() 
-            #this gives a p by n matrix where each data point i is scaled by the appropiate coef 
-            term_1 = np.array( [sum(column) for column in help_mat]).transpose()
+            #this gives a p by n matrix where each data point i is scaled by the appropiate coef
+            help_mat =  - self.loss.diff(self.ydata, self.ydata_hat) * s_grad * ( self.phi_cos[ j, : ] *  betas_sin[ j ] - self.phi_sin[ j, : ] *  betas_cos[ j ])* self.xdata.transpose()
             #now we sum the columns of the matrix to obtain a p vector for the gradient wrt w_r
+            term_1 = np.array( [sum(column) for column in help_mat]).transpose()
+
             self.grad_w_loss[ j ] = 2 * self.lam * self.weights + term_1 
             self.weight_diff = (self.epsilon * self.grad_w_loss + self.alpha * self.weight_diff)
             self.weights = self.weights - self.weight_diff  
-            self.iterations = self.iterations + 1
+            self.iterations += 1
 
     def train ( self ):
         for h in range( 0, max_it):
