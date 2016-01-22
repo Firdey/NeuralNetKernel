@@ -16,7 +16,7 @@ for j in range(0,517):
     forest_data[j].pop(8)
 print yforest
 print forest_data
-"""
+
 layer_size = [8, 30, 1]
 loss = Mean_S_E
 activ = Sigmoid
@@ -28,7 +28,10 @@ penalty = [0.1, 0.1]
 max_it = 1000
 tolerance = 0.5
 Forest_neural = Network(layer_size, loss, activ, xdata, ydata, epsilon, alpha, penalty, max_it, tolerance)
-print Forest_neural.layer_size
+Forest_neural.train()
+print Forest_neural.loss_vector
+#print Forest_neural.layer_size
+
 """
 from sklearn import cross_validation
 X_train, X_test, y_train, y_test = cross_validation.train_test_split(forest_data, yforest, test_size=0.3, random_state=2)
@@ -55,3 +58,4 @@ for train_index, test_index in kf:
     y_trainK = y_train[train_index]
     y_testK = y_train[test_index]
     #Forest_neural = Network(layer_size, loss, activ, X_train, X_test, epsilon, alpha, penalty, max_it, tolerance)
+"""
