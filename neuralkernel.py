@@ -58,11 +58,8 @@ class Network:
 
         self.weight_diff = 0 #for momentum
         self.betas_diff = 0 #for momentum
-        self.grad_w_loss = np.zeros ((self.p , self.m )) #THIS SHOULD BE IN BACKWARD METHOD
+        self.grad_w_loss = np.zeros ((self.m , self.p )) #THIS SHOULD BE IN BACKWARD METHOD
 
-        self.xdata_weight = 0
-        self.phi_sin = 0
-        self.phi_cos = 0
         self.phi_matrix = 0
         self.weight_vector = 0
         self.ydata_hat = 0
@@ -72,26 +69,27 @@ class Network:
     #FORWARD PROPAGATION
         #given the parameters predict the response vectors
     def forward( self ):
-        self.xdata_weight = np.dot( self.weights, self.xdata.transpose( ) ) #this is  dim m X p of weighted data
-        self.phi_sin = np.array( np.sin( self.xdata_weight ))  / np.sqrt( self.m ) # sin part of phi
-        self.phi_cos = np.array( np.cos( self.xdata_weight ))   / np.sqrt( self.m ) # cos part of phi 
-        self.phi_matrix = np.vstack( (  self.phi_cos , self.phi_sin ) ) # stuck cosines on top of sines
-        self.weight_vector = np.dot( self.betas, self.phi_matrix ) # dim n  includes paramters inside the activation function
-        self.ydata_hat = self.activ.formula( self.weight_vector) # the fitted y's that depend on the activation fn
+        xdata_weight = np.dot(self.weights, self.xdata.transpose()) #this is  dim m X p of weighted data
+        self.phi_sin = np.sin(xdata_weight) # sin part of phi
+        self.phi_cos = np.cos(xdata_weight) # cos part of phi
+        self.phi_matrix = np.vstack((self.phi_cos, self.phi_sin)) / np.sqrt(self.m) # stack cosines on top of sines
+        weight_vector = np.dot(self.betas, self.phi_matrix) # dim n  includes paramters inside the activation function
+        self.ydata_hat = self.activ.formula(weight_vector) # the fitted y's that depend on the activation fn
 
 
     #BACKWARD PROPAGATION
         #given the response vectors, update weights and betas
     def backward ( self ):
         #loss vector is the evaluation of our objective function in every iteration
-        self.loss_vector[ self.iterations ] =  self.loss.formula(self.ydata, self.ydata_hat) * 1.0  + self.lam * np.dot( self.betas, self.betas ) + self.mu * np.sum( self.weights * self.weights )
+        self.loss_vector[ self.iterations ] =  self.loss.formula(self.ydata, self.ydata_hat, self.n) * 1.0  + self.lam * np.dot( self.betas, self.betas ) + self.mu * np.sum( self.weights * self.weights )
         #s_grad computes the gradient of the activation function
-        s_grad = self.activ.diff( self.weight_vector )
+        s_grad = self.activ.diff(self.weight_vector)
+        loss_grad = self.loss.diff(self.ydata, self.ydata_hat, self.n)
 
         #LAYER 1 - UPDATE BETA
 
         #gradient of the objective function wrt b
-        grad_b_loss = 2 * self.lam * self.betas - np.dot(self.phi_matrix , s_grad * self.loss.diff(self.ydata, self.ydata_hat) )
+        grad_b_loss = 2 * self.lam * self.betas - np.dot(self.phi_matrix, s_grad * loss_grad)
         #this is the betas difference including the step*grad and for the momentum term
         self.betas_diff = self.epsilon * grad_b_loss + self.alpha * self.betas_diff
         #update the beta parameter
@@ -99,23 +97,35 @@ class Network:
 
         #LAYER 2 - UPDATE WEIGHTS
 
-        betas_cos = self.betas[ 0 : self.m ]
-        betas_sin = self.betas[ self.m : 2 * self.m ]
+        betas_cos = self.betas[0 : self.m]
+        betas_sin = self.betas[self.m : 2 * self.m]
 
-        #for each column in the weight matrix
-        for j in range( 0, self.m ):
+        #for each column in the weight matrix, update the weights using gradient descent
+        for j in range(0, self.m):
+
+            #gradient of objective wrt weight vector = X' * (diff_loss .* diff_activation .* diff_fourier)
+            #where diff_four is a n vector with elements (beta_sin * cos(weight*x) - beta_cos * sin(weight*x))
+
+            grad = (betas_sin[j]*self.phi_matrix[j,:] - betas_cos[j]*self.phi_matrix[j+ self.m,:])
+            grad *= s_grad
+            grad *= loss_grad
+
             #this gives a p by n matrix where each data point i is scaled by the appropiate coef
-            help_mat =  - self.loss.diff(self.ydata, self.ydata_hat) * s_grad * ( self.phi_cos[ j, : ] *  betas_sin[ j ] - self.phi_sin[ j, : ] *  betas_cos[ j ])* self.xdata.transpose()
+            help_mat =  - self.loss.diff(self.ydata, self.ydata_hat, self.n) * s_grad * ( self.phi_cos[ j, : ] *  betas_sin[ j ] - self.phi_sin[ j, : ] *  betas_cos[ j ])* self.xdata.transpose()
             #now we sum the columns of the matrix to obtain a p vector for the gradient wrt w_r
             term_1 = np.array( [sum(column) for column in help_mat]).transpose()
 
-            self.grad_w_loss[ j ] = 2 * self.lam * self.weights + term_1 
+            self.grad_w_loss[ j ] = 2 * self.lam * self.weights[ j ] + term_1
             self.weight_diff = (self.epsilon * self.grad_w_loss + self.alpha * self.weight_diff)
             self.weights = self.weights - self.weight_diff  
-            self.iterations += 1
+        self.iterations += 1
+
 
     def train ( self ):
-        for h in range( 0, max_it):
+        self.forward()
+        self.backward()
+        while (self.iterations < max_it ) or (self.loss_vector[self.iterations -1] <= self.tolerance):
+       # for h in range( 0, max_it):
             self.forward()
             self.backward()
 
@@ -125,7 +135,7 @@ class Sigmoid:
             return 1/(1+np.exp(-z))
         @staticmethod
         def diff(z):
-            return Sigmoid.value(z) * (1-Sigmoid.value(z))
+            return Sigmoid.formula(z) * (1-Sigmoid.formula(z))
 class Softmax:
     @staticmethod
     def formula(z):
@@ -133,13 +143,49 @@ class Softmax:
     @staticmethod
     def diff(z):
         return
+
 class Mean_S_E:
     @staticmethod
-    def formula(ydata, ydata_hat):
+    def formula(ydata, ydata_hat, n):
         y_errors = ydata - ydata_hat
-        return np.dot( y_errors, y_errors ) * 1.0 / ( self.n )
+        return np.dot( y_errors, y_errors ) * 1.0 / ( n )
     @staticmethod
-    def diff(ydata, ydata_hat):
+    def diff(ydata, ydata_hat, n):
         y_errors = ydata - ydata_hat
-        return 2 * y_errors * 1.0 / ( self.n )
+        return 2 * y_errors * 1.0 / ( n )
 
+
+# Copy into other code to run directly!!!! Though has bugs!!!
+import numpy as np
+import csv
+with open('forestfiretrans.csv', 'rb') as csvfile:
+    next(csvfile, None)
+    forest = csv.reader(csvfile)
+    forest_data = [map(float, l) for l in forest]
+    print forest_data
+    #for row in forest:
+for i in range(0, 517):
+    forest_data[i].pop(0)
+
+yforest = [0 for i in range(517)]
+for j in range(0,517):
+    yforest[j] = forest_data[j][8]
+    forest_data[j].pop(8)
+print yforest
+print forest_data
+
+layer_size = [8, 50, 1]
+loss = Mean_S_E
+activ = Sigmoid
+xdata = np.array(forest_data)
+ydata = np.array(yforest)
+epsilon = 0.5
+alpha = 0.05
+penalty = [0, 0]
+max_it = 1000
+tolerance = 0.5
+Forest_neural = Network(layer_size, loss, activ, xdata, ydata, epsilon, alpha, penalty, max_it, tolerance)
+Forest_neural.train()
+print Forest_neural.loss_vector[1:100]
+print Forest_neural.ydata_hat
+print ydata
