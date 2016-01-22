@@ -17,6 +17,10 @@ for j in range(0,517):
 print yforest
 print forest_data
 
+[forest_data[i].insert(0,1) for i in range(517)]
+print forest_data
+
+"""
 layer_size = [8, 30, 1]
 loss = Mean_S_E
 activ = Sigmoid
@@ -31,7 +35,7 @@ Forest_neural = Network(layer_size, loss, activ, xdata, ydata, epsilon, alpha, p
 Forest_neural.train()
 print Forest_neural.loss_vector
 #print Forest_neural.layer_size
-
+"""
 """
 from sklearn import cross_validation
 X_train, X_test, y_train, y_test = cross_validation.train_test_split(forest_data, yforest, test_size=0.3, random_state=2)
