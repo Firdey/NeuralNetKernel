@@ -1,4 +1,5 @@
 import numpy as np
+import matplotlib.pyplot as plt
 
 #CLASS NETWORK: Neural network using Kernel Learning via Random Fourier Representations
 #METHODS:
@@ -230,5 +231,5 @@ for i in range(0,n):
     print "Feature"+str(data_matrix[i])+" Response: "+str(y[i])+" Prediction: "+str(neural_network.ydata_hat[i])
 error = np.sum(np.absolute(y-neural_network.ydata_hat))*100/n
 print "Test error: "+str(error)
-print "Loss function at every iteration"
-print neural_network.loss_vector
+plt.plot(range(max_it), neural_network.loss_vector)
+plt.show()
