@@ -1,5 +1,7 @@
 import numpy as np
 import matplotlib.pyplot as plt
+import math
+import csv
 
 #CLASS NETWORK: Neural network using Kernel Learning via Random Fourier Representations
 #METHODS:
@@ -89,7 +91,7 @@ class Network:
         #LAYER 1 - UPDATE BETA
 
         #gradient of the objective function wrt b
-        grad_b_loss = 2 * self.lam * self.betas - np.dot(self.phi_matrix, s_grad * loss_grad)
+        grad_b_loss = 2 * self.lam * self.betas + np.dot(self.phi_matrix, s_grad * loss_grad)
         #this is the betas difference including the step*grad and for the momentum term
         self.betas_diff = self.epsilon * grad_b_loss + self.alpha * self.betas_diff
         #update the beta parameter
@@ -168,12 +170,8 @@ class Mean_S_E:
     @staticmethod
     def diff(ydata, ydata_hat, n):
         y_errors = ydata - ydata_hat
-        return 2 * y_errors * 1.0 / ( n )
+        return -2 * y_errors * 1.0 / ( n )
 
-
-import numpy as np
-import math
-import csv
 
 '''
 print "Importing data..."
