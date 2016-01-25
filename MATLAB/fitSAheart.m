@@ -39,14 +39,11 @@ for m_iteration = 1:length(m_array)
         %initalize parameters
         theta = normrnd(0,1,2*m+m*p,1);
 
-        %get the inital objective and train error
-        %[T, ~, error] = objective(X,Y,m,lambda,mu,'sigmoid','d_sigmoid',theta);
-
         %using optimization packages, find the theta which minimize the objective
         theta_optimal = optimizeRandomFourier(X,Y,m,lambda,mu,'sigmoid','d_sigmoid',theta);
 
         %get the optimal object and train error
-        [T_optimal, ~, error_optimal] = objective(X,Y,m,lambda,mu,'sigmoid','d_sigmoid',theta_optimal);
+        [T_optimal, error_optimal] = getT_Error(X,Y,m,lambda,mu,'sigmoid',theta_optimal);
 
         %store result in the array
         T_optimal_array(i,m_iteration) = T_optimal; %objective
