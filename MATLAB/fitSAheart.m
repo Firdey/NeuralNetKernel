@@ -20,8 +20,8 @@ lambda = 0;
 mu = 0;
 
 %store T_optimal and error_optimal for every step of m
-n_repeat = 50;
-m_array = [2,4,8,16,32,64];
+n_repeat = 4;
+m_array = [2,4,8,16];
 T_optimal_array = zeros(n_repeat,length(m_array));
 error_optimal_array = zeros(n_repeat,length(m_array));
 timing_array = zeros(n_repeat,length(m_array));
