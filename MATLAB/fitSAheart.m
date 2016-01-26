@@ -10,8 +10,9 @@ X = data(:,1:(end-1));
 X(:,1) = 1;
 %get the response vector
 Y = data(:,end);
-%get the dimensions
+%get the dimensions and size of training set
 [n,p] = size(X);
+n_train = round(n/2);
 %normalise X
 X(:,2:end) = (X(:,2:end) - repmat(mean(X(:,2:end)),n,1)) ./ repmat(std(X(:,2:end)),n,1);
 
@@ -20,11 +21,20 @@ lambda = 0;
 mu = 0;
 
 %store T_optimal and error_optimal for every step of m
-n_repeat = 4;
-m_array = [2,4,8,16];
-T_optimal_array = zeros(n_repeat,length(m_array));
-error_optimal_array = zeros(n_repeat,length(m_array));
+n_repeat = 48;
+m_array = [2,4,8,16,32,64];
+trainingError_array = zeros(n_repeat,length(m_array));
+testError_array = zeros(n_repeat,length(m_array));
 timing_array = zeros(n_repeat,length(m_array));
+
+%split into test and train set
+% rng(1070);
+% index = randperm(n);
+% rng('shuffle');
+% X_train = X(index(1:n_train),:);
+% X_test = X(index((n_train+1):end),:);
+% Y_train = Y(index(1:n_train));
+% Y_test = Y(index((n_train+1):end));
 
 %for every m
 for m_iteration = 1:length(m_array)
@@ -33,41 +43,50 @@ for m_iteration = 1:length(m_array)
     %repeat n_repeat times
     parfor i = 1:n_repeat
         
-        %start stopwatchq
-        tic
+        %split data
+        index = randperm(n);
+        X_train = X(index(1:n_train),:);
+        X_test = X(index((n_train+1):end),:);
+        Y_train = Y(index(1:n_train));
+        Y_test = Y(index((n_train+1):end));
         
         %initalize parameters
         theta = normrnd(0,1,2*m+m*p,1);
 
         %using optimization packages, find the theta which minimize the objective
-        theta_optimal = optimizeRandomFourier(X,Y,m,lambda,mu,'sigmoid','d_sigmoid',theta);
+        %start stopwatch
+        tic
+        theta_optimal = optimizeRandomFourier(X_train,Y_train,m,lambda,mu,'sigmoid','d_sigmoid',theta);
+        timing_array(i,m_iteration) = toc; %stop stop watch and store time
 
         %get the optimal object and train error
-        [T_optimal, error_optimal] = getT_Error(X,Y,m,lambda,mu,'sigmoid',theta_optimal);
+        training_error = objective(X_train,Y_train,m,lambda,mu,'sigmoid','d_sigmoid',theta_optimal);
+        test_error = objective(X_test,Y_test,m,lambda,mu,'sigmoid','d_sigmoid',theta_optimal);
 
         %store result in the array
-        T_optimal_array(i,m_iteration) = T_optimal; %objective
-        error_optimal_array(i,m_iteration) = error_optimal; %training error
-        timing_array(i,m_iteration) = toc; %timing
+        trainingError_array(i,m_iteration) = training_error; %training error
+        testError_array(i,m_iteration) = test_error; %testing error
     
     end
-    
+    disp(m);
 end
 
-%plot the error_optimal for every m as a box plot
-figure();
-boxplot(error_optimal_array,'labels',m_array);
-xlabel('Number of nodes in the hidden layer');
-ylabel('Train error');
+figure('Position', [800, 600, 700, 420]);
 
-%plot the optimal objective for every m as a box plot
-figure();
-boxplot(T_optimal_array,'labels',m_array);
-xlabel('Number of nodes in the hidden layer');
-ylabel('Objective');
+%plot the training error for every m as a box plot
+subplot(1,3,1);
+boxplot(trainingError_array,'labels',m_array);
+xlabel('m');
+ylabel('Training error');
+
+%plot the test error for every m as a box plot
+subplot(1,3,2);
+boxplot(testError_array,'labels',m_array);
+xlabel('m');
+ylabel('Test error');
 
 %plot the timing for every m as a box plot
-figure();
+subplot(1,3,3);
 boxplot(timing_array,'labels',m_array);
-xlabel('Number of nodes in the hidden layer');
+xlabel('m');
 ylabel('Time took to optimize (s)');
