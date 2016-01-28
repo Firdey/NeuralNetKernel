@@ -87,18 +87,16 @@ University of Warwick \\
 \maketitle
 
 \begin{abstract}
-Random Fourier Features (RFF) is a kernel method that works well for large datasets. It makes certain assumptions about the kernel family, that we aim to relax in this project by presenting an alternative method based on fitting neural networks. We trained the neural network with one hidden layer - approximating the frequencies from Fourier expansion. The predictive accuracy is comparable to the one from the RFF algorithm, achieving however a lower variance. We then applied a similar idea of fitting neural networks using this time two hidden layers and implementing mean pooling to the two-stage sampled learning. We achieved again similar predictive accuracy, but with reduced variance. However,  both methods involve significant computational cost. Furthermore, we have explored various optimization methods and tested them in the neural networks.
+Random Fourier Features (RFF) is a kernel approximation method that works well for large datasets, however It makes certain assumptions about the choice of the kernel and so here in this report, we present and validate an alternative method based on fitting neural networks. Our alternative method consists of training the neural network with one hidden layer- approximating the frequencies from Fourier expansion of some translation invariant kernel in a data dependent fashion. The predictive accuracy is comparable to the one from the RFF algorithm, achieving however a lower variance. We then applied a similar idea of fitting neural networks using this time two hidden layers and implementing mean pooling to the two-stage sampled learning. We achieved again similar predictive accuracy, but with reduced variance. However,  both methods involve significant computational cost. Furthermore, we have explored various optimisation methods and tested them in the neural networks.
 \end{abstract}
 
 
 
 \section{Introduction}
+Kernel methods allows one to work in a high dimensional feature space, possibly infinite without explicitly working in them. It however comes with an expensive computational cost, especially when the data set is large. Random Fourier Features (RFF) \cite{Rahimi} deals with this problem by taking some pre-specified translation invariant kernel and approximates it by a finite dimensional explicit feature map, which is usually computational more efficient to work on. The problem with this is that the choice of the kernel has to be made and choosing a good kernel is still a challenging and open question. To deal with this, we present a method using a one hidden layer neural network, that optimise the parameters of a non-linear map (as given in RFF) directly in a data-dependent fashion, which can be implicitly seen as optimising some `optimal' kernel. Further, we also proposed a method using a two hidden layer neural network and mean pooling on a two-staged sampled learning problem.
+\\
 
-In this project we show that 
-
-In Section 2 of this report the background theory of kernels and relevant techniques used are discussed; we aim to give some general intuition into the basic theory of kernels themselves, culminating with the Representer Theorem, and then briefly describe random Fourier representations and learning theory on distributions.
-
-In Section 3...
+As a quick outline of the paper, in Section 2 of this report the background theory of kernels and relevant techniques used are discussed; we aim to give some general intuition into the basic theory of kernels themselves, culminating with the Representer Theorem, and then briefly describe random Fourier representations and learning theory on distributions. In Section 3, we discuss various optimisation methods for neural networks, such as gradient descent, stochastic gradient descent and Quasi-Newton and compare their performance. In Section 4, we using the Adult and Aerosol Data Set to compare and contrast our alternative method for one and two hidden layer with mean pooling versus the RFF algorithm with a RBF kernel, before ending with Conclusion.
 
 
 \section{Background Theory}
@@ -143,7 +141,10 @@ $$k(x-y)=\int_{\mathbb{R}^d} e^{i\,\omega^T (x-y)}\, p(\omega)d\omega=\mathbb{E}
 \label{khat}
  \hat{k}(x,y)=\frac{1}{m}\sum_{j=1}^m \big[\cos(\omega_j^T x)\cos(\omega_j^T y) + \sin (\omega_j^T x) \sin (\omega_j^T y)\big].
 \end{equation}
-
+This form suggests we have an explicit finite dimensional feature map, allowing us to potentially save computational power.
+\begin{equation}
+ \phi(x):=\sqrt{\frac{1}{m}}\left[\cos\left(\omega_1^\top x\right),\sin\left(\omega_1^\top x\right)\ldots,\cos\left(\omega_m^\top x\right),\sin\left(\omega_m^\top x\right)\right]\in\mathbb R^{2m}.
+\end{equation}
 \noindent In \cite{Rahimi} the authors proved uniform convergence in probability on compacts, exponentially as $m$ grows.
 
 We will later approach this from the other direction: by considering (\ref{khat}) to be a collection of kernels parameterised by the $m$ frequencies, and fit a two-layer neural net to optimally choose a kernel, i.e. a set of frequencies.
@@ -181,7 +182,7 @@ z(x) = \sqrt{ \frac{1}{m}} \sum_{j=1}^{m} \beta_{j}^{cos} cos( w_{j}^{t} x ) + \
 \hat{y}^{(i)}=S( z (x_{i} ))
 \end{equation}
 
-and $S$ is the activation function. The objective cannot be assumed to be convex and may have a number of local optimals. It can be shown that the gradient of the objective with respect to $\vectGreek{\beta}$ and $\matr{\Omega}$ can be calculated to a closed form, which will be useful for methods in optimization.
+and $S$ is the activation function. The objective cannot be assumed to be convex and may have a number of local optimals. It can be shown that the gradient of the objective with respect to $\vectGreek{\beta}$ and $\matr{\Omega}$ can be calculated to a closed form, which will be useful for methods in optimization. For exact detail of the whole algorithm, see Appendix.
 
 There are a number of methods to optimize the objective. Methods such as the Nelder-Mead simplex method, trust region algorithm and Quasi-Newton algorithm come packaged with high-level programming languages, such as \emph{R} and \emph{MATLAB}. In particular, the trust region algorithm requires the gradient of the objective.
 
@@ -243,7 +244,7 @@ For the neural net we computed the fitted values by implementing stochastic grad
 
 \subsubsection{RFF}
 For the random fourier features case we simulate frequencies
- $ \{ w_{j} \}_{j=1}^{m}$ from a positive definite shift invariant kernel which we choose to be the gaussian kernel and compute the transformed 
+ $ \{ w_{j} \}_{j=1}^{m}$ from a positive definite shift invariant kernel which we choose to be the RBF kernel and compute the transformed 
 data in 
 \eqref{transf_x} 
 And concentrate them all in a matrix $Z$.
@@ -251,10 +252,10 @@ We then use Ridge regression to find the fitted weights $\{ \beta_{j}^{\cos}, \b
 by minimising the following objective function wrt 
 $\beta$:
  $$ R(\theta) = \| Z^{T} \beta - y\|^2_{2} + \lambda \| \beta\|^2 _{2} $$
-We experimented with the following values for the variables: number of layers $\in { 50,100,200,300,500}$, $\lambda \in \{ 0.01, 0.05, 0.5, 1, 1.5\}$. We also had  $\sigma^2$ which is the variance related to the gaussian RBF kernel used to sample the frequencies. We chose  $\sigma^2$ to be $0.5$ taking into account that the empirical covariances of the fitted frequencies in the neural network implementation had an average of $0.5.$ In this case the misclassification percentage was $14.7 \%$
+We experimented with the following values for the variables: number of layers $\in { 50,100,200,300,500}$, $\lambda \in \{ 0.01, 0.05, 0.5, 1, 1.5\}$. We also had  $\sigma^2$ which is the variance related to the gaussian RBF kernel used to sample the frequencies. We chose  $\sigma^2$ to be $0.5$ taking into account that the empirical covariances of the fitted frequencies in the neural network implementation had an average of $0.5.$ In this case the misclassification percentage was $14.7 \%$.
 
 \subsection{Discussion}
-In our experiments we used RBF kernels for the Random Fourier Features algorithm. In order to approximate these one needs to draw the frequencies at random from the Gaussian distribution with covariance matrix proportional to the identity matrix. By fitting the frequencies with the aid of neural nets we allow ourselves to explore a larger family kernels - those which are still translation invariant, but whose covariances need not be as regular as RBF. One would expect that by extending the search area to a larger family of kernels one should achieve better predictive accuracy - that's why neural nets should in principle achieve better results.\\
+In our experiments we used RBF kernels for the Random Fourier Features algorithm. In order to approximate these one needs to draw the frequencies at random from the Gaussian distribution with covariance matrix proportional to the identity matrix. By fitting the frequencies with the aid of neural nets we allow ourselves to explore a larger family kernels - those which are still translation invariant, but whose covariances need not be as regular as RBF. One would expect that by extending the search area to a larger family of kernels one should achieve better predictive accuracy - that's why neural nets should in principle achieve better results, as it should somehow learn the 'optimal' kernel through the data.\\
 
 The covariance matrix should be somehow informative about the reason for the improvement in predictive accuracy. It is therefore of interest to compare the covariance matrix of the frequencies generated at random for the Random Fourier Features to the covariance matrix of the frequencies fitted by the neural net algorithm.\\
 
@@ -264,7 +265,7 @@ In order to visualise the covariance, we plotted the PCA of the frequencies. Thi
 
 As it turned out the PCA was nearly spherical, as can be seen in Figure~\ref{fig:PCA_nn}, which is exactly what one would expect from the $n$-dimensional data with spherical covariance (this is why RFF looks that way as well, as can be seen in Figure~\ref{fig:PCA_rff}). One possibility for this behaviour is that because the weights are initialized using standard Gaussian distribution they might be getting stuck at some local optimum near the initial values. However, the loss function and predictive accuracy can be tracked during the learning process of the neural nets and they directly show that it is not the case, as the algorithm is learning over time and the loss function goes down considerably.\\
 
-On one hand this is quite surprising as it tells us, that RBF might be the near-optimal kernel to use, but on the other it at least explains why we cannot get the (significantly) better predictive accuracy when using the neural nets to train the model.
+On one hand this is quite surprising as it tells us, that RBF might be the near-optimal kernel to use in this case, but on the other it at least explains why we cannot get the (significantly) better predictive accuracy when using the neural nets to train the model.
 
 
 \subsection{Aerosol Data Set}
@@ -273,38 +274,12 @@ empirical kernel embedding $\mu_{i} = \frac{1}{B} \sum_{a=1}{B} k( \cdot, x_{ia}
 We will compare this method with the RFF approach in which we make a kernel choice on a multi-instance regression for
 aerosol prediction. 
 \subsubsection{Neural Network}
-The parameters for the three layer neural network are the number of layers $D_1$ and $D_2$ respectively, the step size and the penalising parameter $\lambda$. The loss function is quadratic loss and the activation is again the sigmoid function. We tried values of step size $\in \{  0.01, 0.1, 1\}$, $\lambda \in \{ 0.05, 0.5, 1.5 \}$. For the layer sizes using values of $100$ or $200$ overfits the neural network . Having in mind that the training data has $700$ observations, a more reasonable layer size is around $50$ which results in $50 x 50$ combinations. We measure the accuracy by RMSE which is the root of mean squared error an with $\lambda = 0.05$, step size $ = 0.1$ values we obtain RMSE $=0.091$  
+The parameters for the three layer neural network are the number of layers $D_1$ and $D_2$ respectively, the step size and the penalising parameter $\lambda$. The loss function is quadratic loss and the activation is again the sigmoid function. We tried values of step size $\in \{  0.01, 0.1, 1\}$, $\lambda \in \{ 0.05, 0.5, 1.5 \}$. For the layer sizes using values of $100$ or $200$ overfits the neural network . Having in mind that the training data has $700$ observations, a more reasonable layer size is around $50$ which results in $50 x 50$ combinations. We measure the accuracy by RMSE which is the root of mean squared error an with $\lambda = 0.05$, step size $ = 0.1$ values we obtain RMSE $=0.091$.
 \subsubsection{ RFF}
-For the random fourier features we sample the frequencies twice using in both cases a gaussian kernel . The parameters used in this case are the penalising parameter $\lambda$, the layer sizes$D_1$ and $D_2$ and $\sigma_1, \sigma_2$ which define the covariance matrix for the two gaussian kernels from which we sample the frequencies. Using different combinations of values we finalise our model to $\lambda= 0.05$, $D_1=D_2=50$ and $\sigma_1=\sigma_2 = 0.5$. The RMSE we get is $0.11$.\\
+For the random fourier features we sample the frequencies twice using in both cases a gaussian kernel . The parameters used in this case are the penalising parameter $\lambda$, the layer sizes $D_1$ and $D_2$ and $\sigma_1, \sigma_2$ which define the covariance matrix for the two gaussian kernels from which we sample the frequencies. Using different combinations of values we finalise our model to $\lambda= 0.05$, $D_1=D_2=50$ and $\sigma_1=\sigma_2 = 0.5$. The RMSE we get is $0.11$.\\
 As it turns out, the case of the two-stage model used on MISR dataset is very similar to the single-stage one used on Adult dataset - i.e. the covariance matrix of the frequencies again resembles the identity matrix multiplied by a constant and PCA seems spherical. It seems that RBF kernels are again near-optimal.
 \subsection{Conclusions}
-For both cases we conclude that both methods give similar results. The random fourier feature, although very simple in structure as it only uses linear ridge regression competes very well the neural network in terms of accuracy. What is more is that RFF is much faster,  involves less parameters to be tuned and has a simpler structure making it easier to interpret. However, this happens because the choice of the RBF kernel is very good in this case which is definitely not a universal approach. 
-
-
-
-\subsection{Tables}
-
-All tables must be centered, neat, clean and legible. Do not use hand-drawn
-tables. The table number and title always appear before the table. See
-Table~\ref{sample-table}.
-
-Place one line space before the table title, one line space after the table
-title, and one line space after the table. The table title must be lower case
-(except for first word and proper nouns); tables are numbered consecutively.
-
-\begin{table}[t]
-\caption{Sample table title}
-\label{sample-table}
-\begin{center}
-\begin{tabular}{ll}
-\multicolumn{1}{c}{\bf PART}  &\multicolumn{1}{c}{\bf DESCRIPTION}
-\\ \hline \\
-Dendrite         &Input terminal \\
-Axon             &Output terminal \\
-Soma             &Cell body (contains cell nucleus) \\
-\end{tabular}
-\end{center}
-\end{table}
+For both cases we conclude that both methods give similar results. The random fourier feature, although very simple in structure as it only uses linear ridge regression competes very well the neural network in terms of accuracy. What is more is that RFF is much faster,  involves less parameters to be tuned and has a simpler structure making it easier to interpret. However, this happens because the choice of the RBF kernel is very good in this case which is definitely not a universal approach and the advantages from neural network algorithm in `learning' the kernel cannot be ignored.
 
 \begin{thebibliography}{20}
 	\bibitem{Hofmann}
