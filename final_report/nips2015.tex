@@ -240,19 +240,17 @@ For the neural net we computed the fitted values by implementing stochastic grad
  $$ R(\theta) = \frac{1}{n} \sum_{i=1}^{n}L(y_{i}, \hat{y}_{i}) + \lambda \| \beta \|^2 _{2} + \lambda \| \Omega \|^2_{F}$$
  where $L(\cdot,\cdot)$ is the loss function and $\lambda$ is the penalisation parameter for the $L-2$ and the Frobenius norm respectively. 
  We have created a Class for a Network in python that can train a neural network for any number of hidden layers. Note here that we augment the data X so that to include a bias term in the first layer.
- We experimented with $\lambda \in \{ 0.01, 0.01, 0.05, 0.1, 0.5, 1.5\} $,  number of layers $\in \{ 20, 30, 50,  100, 200\} $, step size $ \in \{ 0.001, 0.01, 0.1, 1\}$ and the best accuracy was found to be $15.5\%$ misclassifications and it was obtained with 100 layers, step size of 0.1 and penalty parameter $\lambda = 1.5$. We used the sigmoid function fas activation function $s( \cdot )$ and quadratic loss. 
+ We experimented with $\lambda \in \{ 0.01, 0.01, 0.05, 0.1, 0.5, 1.5\} $,  number of layers $\in \{ 20, 30, 50,  100, 200\} $, step size $ \in \{ 0.001, 0.01, 0.1, 1\}$ and the best accuracy was found to be $15.5\%$ misclassifications and it was obtained with 100 layers, step size of 0.1 and penalty parameter $\lambda = 1.5$. We used the sigmoid function as an activation function $s( \cdot )$ in the output layer and a quadratic loss. 
 
 \subsubsection{RFF}
 For the random fourier features case we simulate frequencies
  $ \{ w_{j} \}_{j=1}^{m}$ from a positive definite shift invariant kernel which we choose to be the RBF kernel and compute the transformed 
-data in 
-\eqref{transf_x} 
-And concentrate them all in a matrix $Z$.
+data in \eqref{transf_x} and concentrate them all in a matrix $Z$.
 We then use Ridge regression to find the fitted weights $\{ \beta_{j}^{\cos}, \beta_{j}^{\sin}\}_{j=1}^{m}$
 by minimising the following objective function with respect to 
 $\beta$:
  $$ R(\theta) = \| Z^{T} \beta - y\|^2_{2} + \lambda \| \beta\|^2 _{2} $$
-We experimented with the following values for the variables: number of layers $\in { 50,100,200,300,500}$, $\lambda \in \{ 0.01, 0.05, 0.5, 1, 1.5\}$. We also had  $\sigma^2$ which is the variance related to the Gaussian RBF kernel used to sample the frequencies. We chose  $\sigma^2$ to be $0.5$ taking into account that the empirical covariances of the fitted frequencies in the neural network implementation had an average of $0.5.$ In this case the misclassification percentage was $14.7 \%$.
+We experimented with the following values for the variables: number of layers $\in \{ 50,100,200,300,500\}$, $\lambda \in \{ 0.01, 0.05, 0.5, 1, 1.5\}$. We also had  $\sigma^2$ which is the variance related to the Gaussian RBF kernel used to sample the frequencies. We chose  $\sigma^2$ to be $0.5$ taking into account that the empirical covariances of the fitted frequencies in the neural network implementation had an average of $0.5.$ In this case the misclassification percentage was $14.7 \%$.
 
 \subsection{Discussion}
 In our experiments we used RBF kernels for the Random Fourier Features algorithm. In order to approximate these one needs to draw the frequencies at random from the Gaussian distribution with covariance matrix proportional to the identity matrix. By fitting the frequencies with the aid of neural nets we allow ourselves to explore a larger family kernels - those which are still translation invariant, but whose covariances need not be as regular as RBF. One would expect that by extending the search area to a larger family of kernels one should achieve better predictive accuracy - that's why neural nets should in principle achieve better results, as it should somehow learn the `optimal' kernel through the data.
@@ -270,15 +268,15 @@ On one hand this is quite surprising as it tells us, that RBF might be the near-
 
 \subsection{Aerosol Data Set}
 The aerosol dataset involves 800 bags of 100 observations per bag.  In this case we treat the problem in two ways again. In the first we consider a multi-instance problem, where for each output $y_{i}$, there is a whole bag of B inputs assumed to arise from a probability distribution $P_{i}$. We represent  bag $i$ by the corresponding 
-empirical kernel embedding $\mu_{i} = \frac{1}{B} \sum_{a=1}{B} k( \cdot, x_{ia})$ with respect to to a fixed kernel k and then consider the $\mu_{i} 's$ to be inputs of a new problem where we define another kernel K. 
+empirical kernel embedding $\mu_{i} = \frac{1}{B} \sum_{a=1}^{B} k( \cdot, x_{ia})$ with respect to a fixed kernel k and then consider the $\mu_{i} 's$ to be inputs of a new problem where we define another kernel K. 
 We will compare this method with the RFF approach in which we make a kernel choice on a multi-instance regression for
 aerosol prediction. 
 \subsubsection{Neural Network}
-The parameters for the three layer neural network are the number of layers $D_1$ and $D_2$ respectively, the step size and the penalising parameter $\lambda$. The loss function is quadratic loss and the activation is again the sigmoid function. We tried values of step size $\in \{  0.01, 0.1, 1\}$, $\lambda \in \{ 0.05, 0.5, 1.5 \}$. For the layer sizes using values of $100$ or $200$ overfits the neural network . Having in mind that the training data has $700$ observations, a more reasonable layer size is around $50$ which results in $50 x 50$ combinations. We measure the accuracy by RMSE which is the root of mean squared error an with $\lambda = 0.05$, step size $ = 0.1$ values we obtain RMSE $=0.091$.
+The parameters for the three layer neural network are the number of layers $D_1$ and $D_2$ respectively, the step size and the penalising parameter $\lambda$. The loss function is quadratic loss and the activation is identity function. We tried values of step size $\in \{  0.01, 0.1, 1\}$, $\lambda \in \{ 0.05, 0.5, 1.5 \}$. For the layer sizes using values of $100$ or $200$ overfits the neural network . Having in mind that the training data has $700$ observations, a more reasonable layer size is around $50$ which results in $50 \times 50$ combinations. We measure the accuracy by RMSE which is the root of mean squared error an with $\lambda = 0.05$, step size $ = 0.1$ values we obtain RMSE $=0.091$.
 \subsubsection{ RFF}
 For the random Fourier features we sample the frequencies twice using in both cases a Gaussian kernel . The parameters used in this case are the penalising parameter $\lambda$, the layer sizes $D_1$ and $D_2$ and $\sigma_1, \sigma_2$ which define the covariance matrix for the two Gaussian kernels from which we sample the frequencies. Using different combinations of values we finalise our model to $\lambda= 0.05$, $D_1=D_2=50$ and $\sigma_1=\sigma_2 = 0.5$. The RMSE we get is $0.11$.
 
-As it turns out, the case of the two-stage model used on MISR dataset is very similar to the single-stage one used on Adult dataset - i.e. the covariance matrix of the frequencies again resembles the identity matrix multiplied by a constant and PCA seems spherical. It seems that RBF kernels are again near-optimal.
+As it turned out, comparing covariance matrices in the case of the two-stage model used on MISR dataset is very similar to the single-stage one used on Adult dataset - i.e. the covariance matrix of the frequencies again resembles the identity matrix multiplied by a constant and PCA seems spherical. It seems that RBF kernels are again near-optimal.
 \subsection{Conclusions}
 For both cases we conclude that both methods give similar results. The random Fourier feature, although very simple in structure as it only uses linear ridge regression competes very well the neural network in terms of accuracy. What is more is that RFF is much faster,  involves less parameters to be tuned and has a simpler structure making it easier to interpret. However, this happens because the choice of the RBF kernel is very good in this case which is definitely not a universal approach and the advantages from neural network algorithm in `learning' the kernel cannot be ignored.
 
