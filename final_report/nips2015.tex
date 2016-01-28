@@ -27,9 +27,9 @@
 \newcommand{\euler}{\mathrm{e}}
 \newcommand{\diff}{\mathrm{d}}
 \newcommand{\T}{^\textup{T}}
-\newcommand{\vect}[1]{\mathbf{#1}}
-\newcommand{\vectGreek}[1]{\boldsymbol{#1}}
-\newcommand{\matr}[1]{\mathsf{#1}}
+\newcommand{\vect}[1]{#1}
+\newcommand{\vectGreek}[1]{#1}
+\newcommand{\matr}[1]{#1}
 \newcommand{\dotdotdot}[1]{\phantom{.}_{\cdots}}
 
 %\documentstyle[nips14submit_09,times,art10]{article} % For LaTeX 2.09
@@ -168,21 +168,21 @@ To fit the random Fourier representation model onto data, the objective, $T$, gi
 \begin{equation}\label{loss}
 T=\frac{1}{n}\sum_{i=1}^{n}
 \left(
-	y^{(i)}-\hat{y}^{(i)}
+	y_i-\hat{y}_i
 \right)^2
 +\lambda\|\vectGreek{\beta}\|^2
 +\mu\|\matr{\Omega}\|^2
 \end{equation}
 where
 \begin{equation} \label{transf_x}
-z(x) = \sqrt{ \frac{1}{m}} \sum_{j=1}^{m} \beta_{j}^{cos} cos( w_{j}^{t} x ) + \sum_{j=1}^{m} \beta_{j}^{sin} sin( w_{j}^{t} x )
+z(x_i) = \sqrt{ \frac{1}{m}}\left[ \sum_{j=1}^{m} \beta_{j}^{\cos} \cos( w_{j}\T x_i ) + \sum_{j=1}^{m} \beta_{j}^{\sin} \sin( w_{j}\T x_i )\right]
 \end{equation}
 
 \begin{equation}\label{pred_y}
-\hat{y}^{(i)}=S( z (x_{i} ))
+\hat{y}_i=S( z (x_{i} ))
 \end{equation}
 
-and $S$ is the activation function. The objective cannot be assumed to be convex and may have a number of local optimals. It can be shown that the gradient of the objective with respect to $\vectGreek{\beta}$ and $\matr{\Omega}$ can be calculated to a closed form, which will be useful for methods in optimization. For exact detail of the whole algorithm, see Appendix.
+$S$ is the activation function, $\beta$ is a vector with elements $\{ \beta_{j}^{\cos}, \beta_{j}^{\sin}\}_{j=1}^{m}$, $\Omega$ is a matrix with columns $ \{ w_{j} \}_{j=1}^{m}$ and $\lambda$, $\mu$ are tuning parameters. The objective cannot be assumed to be convex and may have a number of local optimals. It can be shown that the gradient of the objective with respect to $\vectGreek{\beta}$ and $\matr{\Omega}$ can be calculated to a closed form, which will be useful for methods in optimization. For exact detail of the whole algorithm, see Appendix.
 
 There are a number of methods to optimize the objective. Methods such as the Nelder-Mead simplex method, trust region algorithm and Quasi-Newton algorithm come packaged with high-level programming languages, such as \emph{R} and \emph{MATLAB}. In particular, the trust region algorithm requires the gradient of the objective.
 
@@ -198,24 +198,24 @@ where $\epsilon$ is the step size and is user defined. The initial value of the 
 
 Stochastic gradient descent is similar to gradient descent, however the evaluation of the gradient only uses one data point at a time. That is let
 \begin{equation}
-T^{(i)} =
+T_i =
 \left(
-	y^{(i)}-\hat{y}^{(i)}
+	y_i-\hat{y}_i
 \right)^2
 +\lambda\|\vectGreek{\beta}\|^2
 +\mu\|\matr{\Omega}\|^2
 \end{equation}
 so that in the $i$th iteration the update step is
 \begin{equation}
-\vectGreek{\beta} \leftarrow \vectGreek{\beta} - \epsilon \nabla_{\vectGreek{\beta}}T^{(\text{mod}(i-1,n)+1)}
+\vectGreek{\beta} \leftarrow \vectGreek{\beta} - \epsilon \nabla_{\vectGreek{\beta}}T_{\text{mod}(i-1,n)+1}
 \end{equation}
 and
 \begin{equation}
-\matr{\Omega} \leftarrow \matr{\Omega} - \epsilon \matr{D_{\Omega}}T^{(\text{mod}(i-1,n)+1)} \ .
+\matr{\Omega} \leftarrow \matr{\Omega} - \epsilon \matr{D_{\Omega}}T_{\text{mod}(i-1,n)+1} \ .
 \end{equation}
 By doing so, this enables the parameter space to be explored more. It should also be faster as less calculations are performed in each iteration,
 
-To give some idea of the performance of the optimization algorithms, the random Fourier representation model was fitted onto a small binary classification dataset \emph{SAheart} with $n=462$ samples and $p=9$ features with different number of nodes in the hidden layer, $m$. The sigmoid function was used as the activation function. The optimization was repeated 48 times with different initial values.
+To give some idea of the performance of the optimization algorithms, the random Fourier representation model was fitted onto a small binary classification dataset \emph{SAheart} with $n=462$ samples and $p=9$ features with different number of nodes in the hidden layer, $m$ and the tuning parameters set to zero. The sigmoid function was used as the activation function. The optimization was repeated 48 times with different initial values.
 
 It was found that gradient descent performed much faster than all of the optimization packages such as the Quasi-Newton algorithm. This can be seen from Figure \ref{SAheart}, for $m=64$ the Quasi-Newton algorithm took $(176\pm 4)$ s to complete whereas gradient descent took $(53.3\pm 0.7)$ s. The fastest was stochastic gradient descent which took $(27\pm 8)$ s.
 
